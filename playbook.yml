@@ -1,0 +1,12 @@
+---
+- hosts: all
+  vars:
+  remote_user: root
+  become: yes
+  tasks:
+    - name: Update package signing keyring
+      command: pacman -Sy archlinux-keyring --noconfirm
+    - name: Upgrade system
+      pacman:
+        update_cache: yes
+        upgrade: yes
