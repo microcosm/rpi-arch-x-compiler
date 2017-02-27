@@ -1,7 +1,7 @@
 ---
 - hosts: all
   vars:
-    remote_user: builder
+    remote_user: of
     of_version: v0.9.7
     of_version_full: of_v0.9.7_linuxarmv7l_release
   tasks:
