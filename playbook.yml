@@ -5,7 +5,7 @@
     of_version: v0.9.7
     of_version_full: of_v0.9.7_linuxarmv7l_release
   tasks:
-    #Set up system and create remote user
+    #Initial system setup and create builder user
     - block:
       - name: Update package signing keyring
         command: pacman -Sy archlinux-keyring --noconfirm
@@ -41,7 +41,7 @@
       become: true
       become_user: root
 
-    #Prep openFrameworks and dependencies
+    #Prep openFrameworks, dependencies and builder user profile
     - block:
       - name: Clone rtmidi
         git:
@@ -78,6 +78,8 @@
       - name: Extract openFrameworks
         #unarchive module keeps failing with: "Unable to find [src] in expected paths."
         command: tar vxfz /home/{{builder_user}}/{{of_version_full}}.tar.gz -C /home/{{builder_user}}/{{of_version_full}} --strip-components 1
+        args:
+          creates: /home/{{builder_user}}/{{of_version_full}}
 
       - name: Modify openFrameworks dependencies script to avoid needing confirmations
         replace:
@@ -88,7 +90,7 @@
       become: true
       become_user: "{{builder_user}}"
 
-    #Run openFrameworks scripts
+    #Compile openFrameworks and dependencies
     - block:
       - name: Run openFrameworks dependencies script
         shell: ./install_dependencies.sh
