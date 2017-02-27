@@ -38,6 +38,11 @@
           state: present
           createhome: yes
 
+      - name: Add convenience command to switch to builder user
+        lineinfile:
+          path: /home/vagrant/.bashrc
+          line: 'alias sof="sudo -u {{builder_user}} -s && cd ~"'
+
       become: true
       become_user: root
 
