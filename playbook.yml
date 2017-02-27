@@ -81,6 +81,11 @@
         args:
           creates: /home/{{builder_user}}/{{of_version_full}}
 
+      - name: Add openFrameworks make environment variables to .bash_profile
+        lineinfile:
+          path: /home/{{builder_user}}/.bash_profile
+          line: 'export MAKEFLAGS=-j4 PLATFORM_ARCH=armv7l PLATFORM_VARIANT=raspberry2'
+
       - name: Modify openFrameworks dependencies script to avoid needing confirmations
         replace:
           path: /home/{{builder_user}}/{{of_version_full}}/scripts/linux/archlinux/install_dependencies.sh
