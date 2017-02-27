@@ -1,12 +1,56 @@
 ---
 - hosts: all
   vars:
-  remote_user: root
-  become: yes
+    remote_user: builder
   tasks:
-    - name: Update package signing keyring
-      command: pacman -Sy archlinux-keyring --noconfirm
-    - name: Upgrade system
-      pacman:
-        update_cache: yes
-        upgrade: yes
+    #Set up system and create remote user
+    - block:
+      - name: Update package signing keyring
+        command: pacman -Sy archlinux-keyring --noconfirm
+
+      - name: Upgrade all packages across system
+        pacman:
+          update_cache: yes
+          upgrade: yes
+
+      - name: Install pacman AUR prerequisites
+        command: pacman -S --needed base-devel --noconfirm
+
+      - name: Create 'sudo' group
+        group:
+          name: sudo
+          state: present
+
+      - name: Allow 'sudo' group to have passwordless sudo
+        lineinfile:
+          dest: /etc/sudoers
+          state: present
+          regexp: '^%sudo'
+          line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+
+      - name: Create remote user
+        user:
+          name: "{{remote_user}}"
+          groups: sudo
+          append: yes
+          state: present
+          createhome: yes
+
+      become: true
+      become_user: root
+
+    #Set up openFrameworks
+    - block:
+      - name: Clone rtmidi
+        git:
+          repo: https://aur.archlinux.org/rtmidi.git
+          dest: /home/{{remote_user}}/rtmidi
+          clone: yes
+
+      - name: Build rtmidi
+        command: makepkg -si --noconfirm
+        args:
+          chdir: /home/{{remote_user}}/rtmidi
+
+      become: true
+      become_user: "{{remote_user}}"
