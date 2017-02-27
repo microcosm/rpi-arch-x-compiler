@@ -2,6 +2,8 @@
 - hosts: all
   vars:
     remote_user: builder
+    of_version: v0.9.7
+    of_version_full: of_v0.9.7_linuxarmv7l_release
   tasks:
     #Set up system and create remote user
     - block:
@@ -39,7 +41,7 @@
       become: true
       become_user: root
 
-    #Set up openFrameworks
+    #Prep openFrameworks and dependencies
     - block:
       - name: Clone rtmidi
         git:
@@ -52,5 +54,46 @@
         args:
           chdir: /home/{{remote_user}}/rtmidi
 
+      - name: Clone rtaudio
+        git:
+          repo: https://aur.archlinux.org/rtaudio.git
+          dest: /home/{{remote_user}}/rtaudio
+          clone: yes
+
+      - name: Build rtaudio
+        command: makepkg -si --noconfirm
+        args:
+          chdir: /home/{{remote_user}}/rtaudio
+
+      - name: Download openFrameworks
+        get_url:
+          url: http://openframeworks.cc/versions/{{of_version}}/{{of_version_full}}.tar.gz
+          dest: /home/{{remote_user}}
+
+      - name: Create openFrameworks directory
+        file:
+          path: /home/{{remote_user}}/{{of_version_full}}
+          state: directory
+
+      - name: Extract openFrameworks
+        #unarchive module keeps failing with: "Unable to find [src] in expected paths."
+        command: tar vxfz /home/{{remote_user}}/{{of_version_full}}.tar.gz -C /home/{{remote_user}}/{{of_version_full}} --strip-components 1
+
+      - name: Modify openFrameworks dependencies script to avoid needing confirmations
+        replace:
+          path: /home/{{remote_user}}/{{of_version_full}}/scripts/linux/archlinux/install_dependencies.sh
+          regexp: 'pacman -Sy --needed make'
+          replace: 'pacman -Sy --noconfirm --needed make'
+
       become: true
       become_user: "{{remote_user}}"
+
+    #Run openFrameworks scripts
+    - block:
+      - name: Run openFrameworks dependencies script
+        shell: ./install_dependencies.sh
+        args:
+          chdir: /home/{{remote_user}}/{{of_version_full}}/scripts/linux/archlinux
+
+      become: true
+      become_user: root
