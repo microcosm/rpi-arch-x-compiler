@@ -84,7 +84,7 @@
         #unarchive module keeps failing with: "Unable to find [src] in expected paths."
         command: tar vxfz /home/{{builder_user}}/{{of_version_full}}.tar.gz -C /home/{{builder_user}}/{{of_version_full}} --strip-components 1
         args:
-          creates: /home/{{builder_user}}/{{of_version_full}}
+          creates: /home/{{builder_user}}/{{of_version_full}}/scripts
 
       - name: Add openFrameworks make environment variables to .bash_profile
         lineinfile:
