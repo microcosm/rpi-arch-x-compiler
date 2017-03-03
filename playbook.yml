@@ -1,7 +1,6 @@
 ---
 - hosts: all
   vars:
-    builder_user: of
     of_version: v0.9.7
     of_version_full: of_v0.9.7_linuxarmv7l_release
   tasks:
@@ -18,31 +17,6 @@
       - name: Install pacman AUR prerequisites
         command: pacman -S --needed base-devel --noconfirm
 
-      - name: Create 'sudo' group
-        group:
-          name: sudo
-          state: present
-
-      - name: Allow 'sudo' group to have passwordless sudo
-        lineinfile:
-          dest: /etc/sudoers
-          state: present
-          regexp: '^%sudo'
-          line: '%sudo ALL=(ALL) NOPASSWD: ALL'
-
-      - name: Create remote user
-        user:
-          name: "{{builder_user}}"
-          groups: sudo
-          append: yes
-          state: present
-          createhome: yes
-
-      - name: Add convenience command to switch to builder user
-        lineinfile:
-          path: /home/vagrant/.bashrc
-          line: 'alias sof="sudo -u {{builder_user}} -s && cd ~"'
-
       become: true
       become_user: root
 
@@ -51,61 +25,61 @@
       - name: Clone rtmidi
         git:
           repo: https://aur.archlinux.org/rtmidi.git
-          dest: /home/{{builder_user}}/rtmidi
+          dest: /home/vagrant/rtmidi
           clone: yes
 
       - name: Build rtmidi
         command: makepkg -si --noconfirm
         args:
-          chdir: /home/{{builder_user}}/rtmidi
+          chdir: /home/vagrant/rtmidi
 
       - name: Clone rtaudio
         git:
           repo: https://aur.archlinux.org/rtaudio.git
-          dest: /home/{{builder_user}}/rtaudio
+          dest: /home/vagrant/rtaudio
           clone: yes
 
       - name: Build rtaudio
         command: makepkg -si --noconfirm
         args:
-          chdir: /home/{{builder_user}}/rtaudio
+          chdir: /home/vagrant/rtaudio
 
       - name: Download openFrameworks
         get_url:
           url: http://openframeworks.cc/versions/{{of_version}}/{{of_version_full}}.tar.gz
-          dest: /home/{{builder_user}}
+          dest: /home/vagrant
 
       - name: Create openFrameworks directory
         file:
-          path: /home/{{builder_user}}/{{of_version_full}}
+          path: /home/vagrant/{{of_version_full}}
           state: directory
 
       - name: Extract openFrameworks
         #unarchive module keeps failing with: "Unable to find [src] in expected paths."
-        command: tar vxfz /home/{{builder_user}}/{{of_version_full}}.tar.gz -C /home/{{builder_user}}/{{of_version_full}} --strip-components 1
+        command: tar vxfz /home/vagrant/{{of_version_full}}.tar.gz -C /home/vagrant/{{of_version_full}} --strip-components 1
         args:
-          creates: /home/{{builder_user}}/{{of_version_full}}/scripts
+          creates: /home/vagrant/{{of_version_full}}/scripts
 
-      - name: Add openFrameworks make environment variables to .bash_profile
+      - name: Add openFrameworks make environment variables to .bashrc
         lineinfile:
-          path: /home/{{builder_user}}/.bash_profile
+          path: /home/vagrant/.bashrc
           line: 'export MAKEFLAGS=-j4 PLATFORM_ARCH=armv7l PLATFORM_VARIANT=raspberry2'
 
       - name: Modify openFrameworks dependencies script to avoid needing confirmations
         replace:
-          path: /home/{{builder_user}}/{{of_version_full}}/scripts/linux/archlinux/install_dependencies.sh
+          path: /home/vagrant/{{of_version_full}}/scripts/linux/archlinux/install_dependencies.sh
           regexp: 'pacman -Sy --needed make'
           replace: 'pacman -Sy --noconfirm --needed make'
 
       become: true
-      become_user: "{{builder_user}}"
+      become_user: vagrant
 
     #Compile openFrameworks and dependencies
     - block:
       - name: Run openFrameworks dependencies script
         shell: ./install_dependencies.sh
         args:
-          chdir: /home/{{builder_user}}/{{of_version_full}}/scripts/linux/archlinux
+          chdir: /home/vagrant/{{of_version_full}}/scripts/linux/archlinux
 
       become: true
       become_user: root
